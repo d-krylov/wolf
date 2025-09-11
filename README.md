@@ -1,1 +1,1 @@
-# wolf
+# Wolf - Vulkan C++ wrapper generator
