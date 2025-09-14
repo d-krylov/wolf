@@ -15,15 +15,7 @@ class Parser :
   def __init__(self, input):
     tree = ET.parse(input)
     self.root = tree.getroot()
-    self.enum_category_bits = set()
-    self.enum_category_enum = set()
-    self.protected_extensions = {}
-    self.protected_types = {}
-    self.masks = {}
-    self.enums = defaultdict(list)
-    self.enum_records_from_features = defaultdict(list)
-    self.enum_records_from_extensions = defaultdict(lambda: defaultdict(list))
-    self.enum_record_duplicates = set()
+    self._init()
     self._parse()
 
   def remove_tag(self, name: str) -> str:
@@ -34,6 +26,27 @@ class Parser :
   
   def is_type_disabled(self, key : str) -> bool:
     return key in self.disabled_types or key in self.vulkansc_types
+  
+  def get_enum_record_prefix_size(self, enum_name : str):
+    if enum_name == 'VkResult':
+      return 2
+    prefix_name = self.remove_tag(enum_name)
+    if enum_name in self.enum_category_enum:
+      return get_prefix_size(prefix_name)
+    if enum_name in self.enum_category_bits:
+      prefix_name = prefix_name.replace('FlagBits', '')
+      return get_prefix_size(prefix_name)
+
+  def _init(self):
+    self.enum_category_bits = set()
+    self.enum_category_enum = set()
+    self.protected_extensions = {}
+    self.protected_types = {}
+    self.masks = {}
+    self.enums = defaultdict(list)
+    self.enum_records_from_features = defaultdict(list)
+    self.enum_records_from_extensions = defaultdict(lambda: defaultdict(list))
+    self.enum_record_duplicates = set()
 
   def _parse(self):
     self._parse_header()
@@ -66,16 +79,6 @@ class Parser :
         for type_node in require_node.findall('type'):
           type_name = type_node.get('name')
           self.protected_types[type_name] = self.platforms[platforms_name]
-  
-  def get_enum_record_prefix_size(self, enum_name : str):
-    if enum_name == 'VkResult':
-      return 2
-    prefix_name = self.remove_tag(enum_name)
-    if enum_name in self.enum_category_enum:
-      return get_prefix_size(prefix_name)
-    if enum_name in self.enum_category_bits:
-      prefix_name = prefix_name.replace('FlagBits', '')
-      return get_prefix_size(prefix_name)
 
   def _parse_types(self):
     for type_node in self.root.find('types'):
@@ -84,7 +87,8 @@ class Parser :
       category = type_node.get('category')
       if category == 'bitmask':
         name = type_node.find('name').text
-        self.masks[name] = type_node.get('requires') or type_node.get('bitvalues')
+        type = type_node.find('type').text
+        self.masks[name] = type_node.get('requires') or type_node.get('bitvalues') or type
       elif category == 'enum':
         name = type_node.get('name')
         target = self.enum_category_bits if 'FlagBits' in name else self.enum_category_enum
@@ -95,6 +99,7 @@ class Parser :
       enum_name = enum_node.get('name')
       if enum_node.get('type') == 'constants' or self.is_type_disabled(enum_name):
         continue
+      self.enums[enum_name] = []
       for enum_record_node in enum_node.findall('enum'):
         if enum_record_node.attrib.keys() & ('deprecated', 'alias'):
           continue

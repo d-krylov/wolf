@@ -26,7 +26,7 @@ def generate_enums(parser: Parser):
   enums_out = ''
   for enum_name, enum_records in parser.enums.items():
     prefix_size = parser.get_enum_record_prefix_size(enum_name)
-    enum_content = to_string(enum_records, prefix_size) + ENUM_SEPARATOR
+    enum_content = to_string(enum_records, prefix_size) + (ENUM_SEPARATOR if enum_records else '') 
     enum_content += generate_enum_records_from_extensions(enum_name, parser)
     enum_content += generate_enum_records_from_features(enum_name, parser)
     type_name = enum_name.removeprefix('Vk')
@@ -36,9 +36,9 @@ def generate_enums(parser: Parser):
     elif enum_name in parser.enum_category_bits:
       type_name = type_name.replace('Flag', 'Mask')
       mask_type = enum_name.replace('FlagBits', 'Flags')
-      enum_current = mask_template.format(type_name, mask_type, enum_content)
+      enum_current = enum_mask_template.format(type_name, mask_type, enum_content)
     else:
-      raise ValueError('Unexpected enum')
+      raise ValueError(f'Unexpected enum: {enum_name}')
     
     if enum_name in parser.protected_types:
       protection_name = parser.protected_types[enum_name]
@@ -52,3 +52,16 @@ def generate_enum_file(parser: Parser):
   enums_file_content = file_template.format('WOLF_ENUMS_H', '#include <vulkan/vulkan.h>', 'Wolf', enums)
   with open("enums.h", "w") as f:
     f.write(enums_file_content)
+
+def generate_masks_file(parser: Parser):
+  mask_template = 'using {0} = Mask<{1}>'
+  masks = []
+  for mask, bits in parser.masks.items():
+    mask_name = parser.remove_tag(mask.removeprefix('Vk').replace('Flags', 'Mask'))
+    bits_name = parser.remove_tag(bits.removeprefix('Vk').replace('FlagBits', 'MaskBits'))
+    masks.append((mask_name, bits_name))
+  masks_content = LINE_SEPARATOR.join(mask_template.format(mask, bits) for mask, bits in masks)
+  masks_file_content = file_template.format('WOLF_MASKS_H', '#include "mask.h"', 'Wolf', masks_content)
+  with open("masks.h", "w") as f:
+    f.write(masks_file_content)
+

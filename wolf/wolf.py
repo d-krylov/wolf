@@ -2,7 +2,7 @@
 
 import argparse
 from parser import Parser
-from generator import generate_enum_file
+from generator import generate_enum_file, generate_masks_file
 
 
 def parse_arguments():
@@ -20,6 +20,7 @@ if __name__ == "__main__":
   parser = Parser(arguments.input)
 
   generate_enum_file(parser)
+  generate_masks_file(parser)
 
 
 

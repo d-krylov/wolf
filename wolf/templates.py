@@ -1,4 +1,5 @@
 ENUM_SEPARATOR = ',\n'
+LINE_SEPARATOR = ';\n'
 
 enum_template = """
 enum class {0} {{
@@ -6,7 +7,7 @@ enum class {0} {{
 }};
 """
 
-mask_template = """
+enum_mask_template = """
 enum class {0} : {1} {{
 {2}
 }};
