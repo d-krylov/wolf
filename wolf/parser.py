@@ -105,7 +105,7 @@ class Parser :
       if enum_node.get('type') == 'constants' or self.is_type_disabled(enum_name):
         continue
       for enum_record_node in enum_node.findall('enum'):
-        if 'deprecated' in enum_record_node.attrib:
+        if enum_record_node.attrib.keys() & ('deprecated', 'alias'):
           continue
         record_name = enum_record_node.get('name')
         self.enums[enum_name].append(record_name)
@@ -133,7 +133,7 @@ class Parser :
       for require_node in extension_node.findall('require'):
         for enum_record_node in require_node.findall('enum'):
           extend_name = enum_record_node.get('extends')
-          if 'alias' in enum_record_node or extend_name is None or self.is_type_disabled(extend_name):
+          if 'alias' in enum_record_node.attrib or extend_name is None or self.is_type_disabled(extend_name):
             continue
           if 'api' not in enum_record_node.attrib or enum_record_node.get('api') == 'vulkan':
             record_name = enum_record_node.get('name')
