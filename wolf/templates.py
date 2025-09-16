@@ -35,3 +35,9 @@ namespace {2} {{
 
 #endif // {0}
 """
+
+structure_template = """
+struct {0} {{
+{1}
+}};
+"""

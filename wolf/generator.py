@@ -65,3 +65,37 @@ def generate_masks_file(parser: Parser):
   with open("masks.h", "w") as f:
     f.write(masks_file_content)
 
+
+def get_member_type(parser: Parser, member):
+  generated_type = member.type
+  if member.type in parser.masks:
+    generated_type = parser.remove_tag(member.type.removeprefix('Vk').replace('Flags', 'Mask'))
+  elif member.type in parser.enum_category_enum:
+    generated_type = member.type.removeprefix('Vk')
+    generated_type = parser.remove_tag(generated_type)
+  elif member.type in parser.enum_category_bits:
+    generated_type = member.type.removeprefix('Vk')
+    generated_type = parser.remove_tag(generated_type)
+    generated_type = generated_type.replace('Flag', 'Mask')
+  elif member.type in parser.structure_category:
+    generated_type = member.type.removeprefix('Vk')
+  return generated_type
+
+def generate_structures(parser: Parser):
+  structures = ''
+  for structure in parser.structures:
+    structure_name = structure.name.removeprefix('Vk')
+    structure_members = []
+    for member in structure.members:
+      generated_type = get_member_type(parser, member)
+      structure_members.append(member.signature.replace(member.type, generated_type))
+    structure_content = LINE_SEPARATOR.join(structure_members) + LINE_SEPARATOR
+    structure_current = structure_template.format(structure_name, structure_content)
+    structures += structure_current
+  return structures
+
+def generate_structure_file(parser: Parser):
+  structures = generate_structures(parser)
+  structure_file_content = file_template.format('WOLF_STRUCTURES_H', '#include "enums.h"', 'Wolf', structures)
+  with open("structures.h", "w") as f:
+    f.write(structure_file_content)
