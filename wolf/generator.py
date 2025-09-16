@@ -4,16 +4,16 @@ from templates import *
 def to_string(enum_records: list, prefix_size: int) -> str:
   return ENUM_SEPARATOR.join('E' + enum_record[prefix_size:] + ' = ' + enum_record for enum_record in enum_records)
 
+def protect(content: str, protection: str | None) -> str:  
+  return protection_template.format(protection, content) if protection else content
+
 def generate_enum_records_from_extensions(enum_name: str, parser: Parser):
   if enum_name not in parser.enum_records_from_extensions: return ''
   prefix_size = parser.get_enum_record_prefix_size(enum_name)
   enum_out = ''
   for extension_name, enum_records in parser.enum_records_from_extensions[enum_name].items():
     enum_content = to_string(enum_records, prefix_size) + ENUM_SEPARATOR
-    if extension_name in parser.protected_extensions:
-      enum_out += protection_template.format(parser.protected_extensions[extension_name], enum_content)
-    else:
-      enum_out += enum_content
+    enum_out += protect(enum_content, parser.protected_extensions.get(extension_name))
   return enum_out
 
 def generate_enum_records_from_features(enum_name: str, parser: Parser):
@@ -40,11 +40,8 @@ def generate_enums(parser: Parser):
     else:
       raise ValueError(f'Unexpected enum: {enum_name}')
     
-    if enum_name in parser.protected_types:
-      protection_name = parser.protected_types[enum_name]
-      enum_current = protection_template.format(protection_name, enum_current)
-    
-    enums_out += enum_current
+    enums_out += protect(enum_current, parser.protected_types.get(enum_name))
+
   return enums_out
 
 def generate_enum_file(parser: Parser):
@@ -71,12 +68,9 @@ def get_member_type(parser: Parser, member):
   if member.type in parser.masks:
     generated_type = parser.remove_tag(member.type.removeprefix('Vk').replace('Flags', 'Mask'))
   elif member.type in parser.enum_category_enum:
-    generated_type = member.type.removeprefix('Vk')
-    generated_type = parser.remove_tag(generated_type)
+    generated_type = parser.remove_tag(member.type.removeprefix('Vk'))
   elif member.type in parser.enum_category_bits:
-    generated_type = member.type.removeprefix('Vk')
-    generated_type = parser.remove_tag(generated_type)
-    generated_type = generated_type.replace('Flag', 'Mask')
+    generated_type = parser.remove_tag(member.type.removeprefix('Vk').replace('Flag', 'Mask'))
   elif member.type in parser.structure_category:
     generated_type = member.type.removeprefix('Vk')
   return generated_type

@@ -68,7 +68,7 @@ class Parser :
     return name
   
   def is_type_disabled(self, key : str) -> bool:
-    return key in self.disabled_types or key in self.vulkansc_types
+    return key in self.disabled_types
   
   def get_enum_record_prefix_size(self, enum_name : str):
     if enum_name == 'VkResult':
@@ -84,6 +84,7 @@ class Parser :
     self.enum_category_bits = set()
     self.enum_category_enum = set()
     self.structure_category = set()
+    self.disabled_types = set()
     self.protected_extensions = {}
     self.protected_types = {}
     self.masks = {}
@@ -109,10 +110,9 @@ class Parser :
     self.tag_names = [ tnode.get('name') for tnode in self.root.find('tags') ]
 
   def _parse_disabled_types(self):
-    self.disabled_types = { dtype.get('name') for dtype in self.root.findall("extensions/extension[@supported='disabled']/require/type") }
-    self.vulkansc_types = { stype.get('name') for stype in self.root.findall("extensions/extension[@supported='vulkansc']/require/type") }
-    # Add vulkansc types from features
-    self.vulkansc_types.update(stype.get('name') for stype in self.root.findall("feature[@api='vulkansc']/require/type"))
+    self.disabled_types.update(dtype.get('name') for dtype in self.root.findall("extensions/extension[@supported='disabled']/require/type"))
+    self.disabled_types.update(stype.get('name') for stype in self.root.findall("extensions/extension[@supported='vulkansc']/require/type"))
+    self.disabled_types.update(stype.get('name') for stype in self.root.findall("feature[@api='vulkansc']/require/type"))
 
   def _parse_protected_types(self):
     for extension_node in self.root.find('extensions'):

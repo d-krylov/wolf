@@ -8,9 +8,12 @@ from generator import generate_enum_file, generate_masks_file, generate_structur
 def parse_arguments():
   parser = argparse.ArgumentParser(description='Wolf command line parser')
   parser.add_argument("input", help="Path to vk.xml")
+  parser.add_argument('-ge', '--genums', action='store_true', help="Generate enums")
+  parser.add_argument('-gm', '--gmasks', action='store_true', help="Generate masks")
   parser.add_argument('-pe', '--penums', action='store_true', help="Generate protected enums") 
   parser.add_argument('-ae', '--aenums', action='store_true', help="Generate aliased enums") 
-  parser.add_argument('-ps', '--pstructures', action='store_true', help="Generate protected structures") 
+  parser.add_argument('-ps', '--pstructures', action='store_true', help="Generate protected structures")
+  parser.add_argument('-gs', '--gstructures', action='store_true', help="Generate structures")
   arguments = parser.parse_args()
   return arguments
 
@@ -20,9 +23,13 @@ if __name__ == "__main__":
 
   parser = Parser(arguments)
 
-  #generate_enum_file(parser)
-  #generate_masks_file(parser)
-  generate_structure_file(parser)
+  if arguments.genums:
+    generate_enum_file(parser)
+  if arguments.gmasks:
+    generate_masks_file(parser)
+  if arguments.gstructures:
+    generate_structure_file(parser)
+  
 
 
 
