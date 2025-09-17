@@ -46,7 +46,7 @@ def generate_enums(parser: Parser):
 
 def generate_enum_file(parser: Parser):
   enums = generate_enums(parser)
-  enums_file_content = file_template.format('WOLF_ENUMS_H', '#include <vulkan/vulkan.h>', 'Wolf', enums)
+  enums_file_content = header_template.format('WOLF_ENUMS_H', '#include <vulkan/vulkan.h>', 'Wolf', enums)
   with open("enums.h", "w") as f:
     f.write(enums_file_content)
 
@@ -58,7 +58,7 @@ def generate_masks_file(parser: Parser):
     bits_name = parser.remove_tag(bits.removeprefix('Vk').replace('FlagBits', 'MaskBits'))
     masks.append((mask_name, bits_name))
   masks_content = LINE_SEPARATOR.join(mask_template.format(mask, bits) for mask, bits in masks)
-  masks_file_content = file_template.format('WOLF_MASKS_H', '#include "mask.h"', 'Wolf', masks_content)
+  masks_file_content = header_template.format('WOLF_MASKS_H', '#include "mask.h"', 'Wolf', masks_content)
   with open("masks.h", "w") as f:
     f.write(masks_file_content)
 
@@ -80,16 +80,33 @@ def generate_structures(parser: Parser):
   for structure in parser.structures:
     structure_name = structure.name.removeprefix('Vk')
     structure_members = []
+    structure_type = structure_type_template.format(structure.type.removeprefix('VK_STRUCTURE_TYPE')) if structure.type else ''
     for member in structure.members:
       generated_type = get_member_type(parser, member)
-      structure_members.append(member.signature.replace(member.type, generated_type))
+      member_value = '= structure_type' if structure.type and member.name == 'sType' else ' = {}'
+      structure_members.append(member.signature.replace(member.type, generated_type) + member_value)
     structure_content = LINE_SEPARATOR.join(structure_members) + LINE_SEPARATOR
-    structure_current = structure_template.format(structure_name, structure_content)
+    cast_functions = method_declarations_template.format(structure_name)
+    if structure.type:
+      structure_current = structure_template.format(structure_name, structure_content, cast_functions, structure_type)
+    else:
+      structure_current = structure_template.format(structure_name, structure_content, cast_functions, '')
     structures += structure_current
   return structures
 
+def generate_structure_methods(parser: Parser):
+  structure_members = ''
+  for structure in parser.structures:
+    structure_name = structure.name.removeprefix('Vk')
+    structure_members += methods_template.format(structure_name)
+  return structure_members
+
 def generate_structure_file(parser: Parser):
   structures = generate_structures(parser)
-  structure_file_content = file_template.format('WOLF_STRUCTURES_H', '#include "enums.h"', 'Wolf', structures)
+  structure_file_content = header_template.format('WOLF_STRUCTURES_H', '#include "enums.h"', 'Wolf', structures)
   with open("structures.h", "w") as f:
     f.write(structure_file_content)
+  structure_members = generate_structure_methods(parser)
+  structure_members_file_content = cpp_template.format('#include "structures.h"', 'Wolf', structure_members)
+  with open("structures.cpp", "w") as f:
+    f.write(structure_members_file_content)

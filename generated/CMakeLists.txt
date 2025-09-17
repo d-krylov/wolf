@@ -10,6 +10,7 @@ find_package(Vulkan REQUIRED)
 
 add_executable(${PROJECT_NAME} 
   main.cpp
+  structures.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

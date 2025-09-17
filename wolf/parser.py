@@ -22,7 +22,7 @@ def get_structure_member_signature(member):
       signature.append(node.tail)
   return ' '.join(signature)
 
-Structure = namedtuple('Structure', ['name', 'members']) 
+Structure = namedtuple('Structure', ['name', 'type', 'members']) 
 StructureMember = namedtuple('StructureMember', ['name', 'type', 'signature'])
 
 class StructureSorter :
@@ -210,6 +210,7 @@ class Parser :
       if not self.arguments.pstructures and structure_name in self.protected_types:
         continue
       structure_members = []
+      structure_type = type_node.find("member").get("values", None)
       for member_node in type_node.findall('member'):
         if member_node.get("api", "vulkan") == "vulkan":
           member_name = member_node.find('name').text
@@ -217,7 +218,7 @@ class Parser :
           member_signature = get_structure_member_signature(member_node)
           member = StructureMember(member_name, member_type, member_signature)
           structure_members.append(member)
-      self.structures.append(Structure(structure_name, structure_members))
+      self.structures.append(Structure(structure_name, structure_type, structure_members))
     structure_sorter = StructureSorter(self.structures)
     self.structures = structure_sorter.get()
 
